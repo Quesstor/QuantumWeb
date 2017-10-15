@@ -1,0 +1,115 @@
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+    crossorigin="anonymous">
+
+<div ng-app="myApp"
+    ng-controller="myCtrl">
+    <input type="text"
+        ng-model="registerName">
+    <div class="btn btn-default"
+        ng-click="addRegister()">Add Register </div>
+    <div class="btn-group"
+        ng-mouseover="makeDroppable()">
+        <div class="btn btn-primary draggable"
+            id="GateX">X</div>
+        <div class="btn btn-primary draggable"
+            id="GateY">Y</div>
+    </div>
+    <br><br> {{step}}
+    <div class="btn-group">
+        <div class="btn btn-default"
+            ng-click="step=0">First</div>
+        <div class="btn btn-default"
+            ng-click="step = Math.max(0,step - 1)">Previous</div>
+        <div class="btn btn-default"
+            ng-click="step = Math.min(gateIndizes.length, step + 1)">Next</div>
+        <div class="btn btn-default"
+            ng-click="step = gateIndizes.length">Last</div>
+    </div>
+    <br><br>
+    <table>
+        <tbody ng-repeat="(registername,register) in registers"
+            style="display:table; width:100%;">
+            <tr ng-repeat="qubit in register track by $index"
+                style="border-bottom:1px solid black; margin:20px;">
+                <td>
+                    <div class="btn btn-default"
+                        ng-show="$index==0"
+                        ng-click="addQubit(registername)">Add Qubit</div>
+                </td>
+                <td>
+                    | {{registername}} {{$index}} &rsaquo;=|
+                    <div ng-click="qubit.front.initialState=!qubit.front.initialState"
+                        class="btn btn-default">{{qubit.front.initialState?1:0}} &rsaquo;
+                    </div>
+                </td>
+                <td ng-repeat="gateIndex in gateIndizes"
+                    class="droppable"
+                    id="{{registername}}.{{$parent.$index}}.{{gateIndex}}"
+                    ng-mouseenter="hover=true"
+                    style="position: relative"
+                    ng-mouseleave="hover=false">
+                    {{qubit.gates[gateIndex]}}
+                    <span ng-show="hover"
+                        class="pull-right btn btn-sm btn-default"
+                        style="position: absolute; right: 0; top: 2px;"
+                        ng-click="registers[registername][$parent.$index].gates[gateIndex]=''">&times;</span>
+
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <br><br><br>
+    <pre>{{registers | json}}</pre>
+
+</div>
+<script>
+    var app = angular.module('myApp', []);
+    app.controller('myCtrl', function ($scope, $timeout) {
+        $scope.Math = Math;
+        $scope.gateIndizes = [0, 1];
+        $scope.step = 0;
+        $scope.registerName = "x";
+        $scope.registers = {};
+        $scope.addRegister = function () {
+            $scope.registers[$scope.registerName] = [];
+            $scope.addQubit($scope.registerName);
+            $scope.addQubit($scope.registerName);
+        }
+        $scope.addQubit = function (register) {
+            $scope.registers[register].push({ "front": { initialState: false }, "gates": {} });
+        }
+        $scope.addGate = function (register, qubitIndex, gateIndex, gateType) {
+            $scope.registers[register][qubitIndex].gates[gateIndex] = gateType;
+            if (gateIndex == $scope.gateIndizes.length - 1) $scope.gateIndizes.push($scope.gateIndizes.length);
+        }
+        $scope.addRegister();
+        $scope.makeDroppable = function () {
+            $(".droppable").droppable({
+                drop: function (e, u) {
+                    var gateType = u.draggable[0].id;
+                    var str = $(this)[0].id.split(".");
+                    var register = str[0];
+                    var qubitIndex = str[1];
+                    var gateIndex = str[2];
+                    $scope.addGate(register, qubitIndex, gateIndex, gateType);
+                    $scope.$apply();
+                }
+            });
+        }
+    });
+    $(".draggable").draggable({
+        revert: true
+    });
+
+</script>
+<style>
+    td {
+        border: 1px solid #ccc;
+        width: 120px;
+    }
+</style>
